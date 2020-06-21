@@ -77,7 +77,7 @@ It might be tempting to write code as follows:
 ]
 
 However, the above code has a shell injection vulnerability.
-Consider when @racket[ls-unsafe] is invoked with the argument
+For example, when @racket[ls-unsafe] is invoked with the argument
 @racket["somefile; rm -rf ~"], the argument to @racket[system]
 would have the following value:
 
