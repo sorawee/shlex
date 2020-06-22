@@ -24,7 +24,7 @@ to a format that can be used with (safe) @racket[system*]-like functions (e.g., 
 Note, however, that this library differs from the Python's library.
 It only supports @racket[split] (@tt{shlex.split}), @racket[join] (@tt{shlex.join}),
 and @racket[quote-arg] (@tt{shlex.quote}) with no customization.
-The implementation is based directly on the specification of the
+The implementation of @racket[split] is based directly on the specification of the
 @link["https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html"]{Shell Command Language} in
 the Open Group Base Specifications Issue 7, 2018 edition, rather than Python's implementation.
 
