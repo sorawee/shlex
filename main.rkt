@@ -10,7 +10,7 @@
          (prefix-in : parser-tools/lex-sre))
 
 (provide (contract-out [quote-arg (-> string? string?)]
-                       [split (-> string? (listof string?))]
+                       [split (->* (string?) (#:comment? any/c) (listof string?))]
                        [join (-> (listof string?) string?)]))
 
 
@@ -44,7 +44,7 @@
    (position-offset start-pos)
    (- (position-offset end-pos) (position-offset start-pos))))
 
-(define (split s)
+(define (split s #:comment? [comment? #t])
   ;; See
   ;; https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html
   ;; Note that <blank> = <space> and <tab>
@@ -64,7 +64,7 @@
                    "double quote"
                    last-double-quote-info)]
      ;; Close the double-quote
-     ["\"" (lex input-port)]
+     ["\"" (lex/no-comment input-port)]
 
      ;; Doc:
      ;; The backslash shall retain its special meaning as an escape character
@@ -82,7 +82,7 @@
      ;; Otherwise, for non-backslash
      [any-char (cons (token lexeme) (double-quote-lex input-port))]))
 
-  (define lex
+  (define lex/no-comment
     (lexer
      ;; Doc:
      ;; If the end of input is recognized, the current token (if any) shall
@@ -111,7 +111,7 @@
      ;; A single-quote cannot occur within single-quotes.
      [(:: "'" (:* (:~ "'")) "'")
       (cons (token (substring lexeme 1 (sub1 (string-length lexeme))))
-            (lex input-port))]
+            (lex/no-comment input-port))]
      [(:: "'") (raise-unterminated-quote "single quote" start-pos end-pos)]
 
      ;; Doc:
@@ -122,8 +122,9 @@
      ;; before splitting the input into tokens. Since the escaped <newline>
      ;; is removed entirely from the input and is not replaced by any
      ;; white space, it cannot serve as a token separator.
-     ["\\\n" (lex input-port)]
-     [(:: "\\" any-char) (cons (token (substring lexeme 1)) (lex input-port))]
+     ["\\\n" (lex/no-comment input-port)]
+     [(:: "\\" any-char)
+      (cons (token (substring lexeme 1)) (lex/no-comment input-port))]
      ;; end group quotes
 
      ;; Doc:
@@ -141,24 +142,24 @@
      ;; the current token shall be delimited.
      [(:or "\n" " " "\t") '()]
 
-     [any-char (cons (token lexeme) (lex input-port))]))
+     [any-char (cons (token lexeme) (lex/no-comment input-port))]))
 
   ;; This is to handle comments. Note that "a#b" should be lexed as "a#b",
   ;; not "a". On the other hand, "a #b" should be lexed as "a"
-  (define lex-init
+  (define lex/comment
     (lexer
      ;; Doc:
      ;; If the current character is a '#', it and all subsequent characters
      ;; up to, but excluding, the next <newline> shall be discarded as a
      ;; comment. The <newline> that ends the line is not considered part of
      ;; the comment.
-     [(:: "#" (:* (:~ "\n"))) (lex input-port)]
+     [(:: "#" (:* (:~ "\n"))) '()]
 
      [(eof) eof]
 
      [any-char (begin
                  (unget lexeme input-port)
-                 (lex input-port))]))
+                 (lex/no-comment input-port))]))
 
   (define (cleanup toks)
     (cond
@@ -168,7 +169,7 @@
        (cleanup (drop-right toks 0))]))
 
   (let loop ()
-    (define out (lex-init in))
+    (define out ((if comment? lex/comment lex/no-comment) in))
     (match out
       [(== eof) '()]
       ['() (loop)]
@@ -267,4 +268,6 @@
 
    ;; My tests
    ("a#b" "a#b")
-   ("a #b" "a")))
+   ("a #b\nc" "a" "c"))
+
+  (check-equal? (split "a #b\nc" #:comment? #f) (list "a" "#b" "c")))

@@ -30,12 +30,14 @@ the Open Group Base Specifications Issue 7, 2018 edition, rather than Python's i
 
 @section{Functions}
 
-@defproc[(split [s string?]) (listof string?)]{
-  Split @racket[s] using shell-like syntax.
-  The function operates in POSIX mode, and comments are supported.
-  The results in particular can be used with @racket[system*]-like functions.
+@defproc[(split [s string?] [#:comment? comment? any/c #t]) (listof string?)]{
+  Split @racket[s] using shell-like syntax in POSIX mode.
 
-  When there is an unterminated quote, @racket[exn:fail:read:eof] is raised.
+  When @racket[comment?] is not @racket[#f], line comments via the character @tt{#} are supported.
+
+  If there is an unterminated quote, @racket[exn:fail:read:eof] will be raised.
+
+  The results in particular can be used with @racket[system*]-like functions.
 
   Notably, the function passes all but one tests in Python's test suite.
   The discrepancy is due to how Python handles comments incorrectly.
@@ -44,7 +46,8 @@ the Open Group Base Specifications Issue 7, 2018 edition, rather than Python's i
     (split "echo -n 'Multiple words'")
     (split "echo \"abc \\\"123\\\" def\" ghi")
     (code:line (split "ls#b") (code:comment @#,elem{Python is wrong in this example, outputting ["ls"]}))
-    (split "ls #b")
+    (split "ls #b\nsome-file")
+    (split "ls #b\nsome-file" #:comment? #f)
   ]
 }
 
