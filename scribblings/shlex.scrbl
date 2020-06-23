@@ -35,7 +35,7 @@ the Open Group Base Specifications Issue 7, 2018 edition, rather than Python's i
 
   When @racket[comment?] is not @racket[#f], line comments via the character @tt{#} are supported.
 
-  If there is an unterminated quote, @racket[exn:fail:read:eof] will be raised.
+  If there is an unterminated quote or escape sequence, @racket[exn:fail:read:eof] will be raised.
 
   The results in particular can be used with @racket[system*]-like functions.
 
