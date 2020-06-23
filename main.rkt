@@ -32,9 +32,9 @@
 (define-syntax-rule (token x)
   (make-position-token x start-pos end-pos))
 
-(define (raise-unterminated-quote type start-pos end-pos)
+(define (raise-unterminated type start-pos end-pos)
   (raise-read-eof-error
-   (format "split: expected a closing ~a at line ~a column ~a"
+   (format "split: expected ~a at line ~a column ~a"
            type
            (position-line start-pos)
            (position-col start-pos))
@@ -60,8 +60,8 @@
     ;; value of all characters within the double-quotes, with the exception
     ;; of the characters backquote, <dollar-sign>, and <backslash>, as follows:
     (lexer
-     [(eof) (apply raise-unterminated-quote
-                   "double quote"
+     [(eof) (apply raise-unterminated
+                   "a closing double quote"
                    last-double-quote-info)]
      ;; Close the double-quote
      ["\"" (lex/no-comment input-port)]
@@ -112,7 +112,7 @@
      [(:: "'" (:* (:~ "'")) "'")
       (cons (token (substring lexeme 1 (sub1 (string-length lexeme))))
             (lex/no-comment input-port))]
-     [(:: "'") (raise-unterminated-quote "single quote" start-pos end-pos)]
+     [(:: "'") (raise-unterminated "a closing single quote" start-pos end-pos)]
 
      ;; Doc:
      ;; A backslash that is not quoted shall preserve the literal value of
@@ -123,8 +123,11 @@
      ;; is removed entirely from the input and is not replaced by any
      ;; white space, it cannot serve as a token separator.
      ["\\\n" (lex/no-comment input-port)]
+
      [(:: "\\" any-char)
       (cons (token (substring lexeme 1)) (lex/no-comment input-port))]
+
+     ["\\" (raise-unterminated "an escape character" start-pos end-pos)]
      ;; end group quotes
 
      ;; Doc:
@@ -270,4 +273,9 @@
    ("a#b" "a#b")
    ("a #b\nc" "a" "c"))
 
-  (check-equal? (split "a #b\nc" #:comment? #f) (list "a" "#b" "c")))
+  (check-equal? (split "a #b\nc" #:comment? #f) (list "a" "#b" "c"))
+
+  ;; Negative tests
+  (check-exn exn:fail:read:eof? (λ () (split "\\")))
+  (check-exn exn:fail:read:eof? (λ () (split "\"")))
+  (check-exn exn:fail:read:eof? (λ () (split "'"))))
