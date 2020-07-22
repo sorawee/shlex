@@ -77,6 +77,7 @@
       (cons (token (substring lexeme 1)) (double-quote-lex input-port))]
      [(:: "\\" any-char)
       (cons (token lexeme) (double-quote-lex input-port))]
+     ["\\" (raise-unterminated "an escape character" start-pos end-pos)]
      ;; end group backslash
 
      ;; Otherwise, for non-backslash
@@ -112,7 +113,7 @@
      [(:: "'" (:* (:~ "'")) "'")
       (cons (token (substring lexeme 1 (sub1 (string-length lexeme))))
             (lex/no-comment input-port))]
-     [(:: "'") (raise-unterminated "a closing single quote" start-pos end-pos)]
+     ["'" (raise-unterminated "a closing single quote" start-pos end-pos)]
 
      ;; Doc:
      ;; A backslash that is not quoted shall preserve the literal value of
