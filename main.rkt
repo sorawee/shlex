@@ -22,6 +22,7 @@
 (define (join xs)
   (string-join (map quote-arg xs) " "))
 
+;; From https://github.com/python/cpython/blob/bf2f76ec0976c09de79c8827764f30e3b6fba776/Lib/shlex.py#L325
 (define (quote-arg s)
   (if (non-empty-string? s)
       (if (regexp-match unsafe-pattern s)
