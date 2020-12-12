@@ -2,7 +2,6 @@
 
 (require racket/contract
          racket/string
-         racket/port
          racket/list
          racket/match
          syntax/readerr
@@ -10,14 +9,12 @@
          (prefix-in : parser-tools/lex-sre))
 
 (provide (contract-out [quote-arg (-> string? string?)]
-                       [split (->* (string?) (#:comment? any/c) (listof string?))]
+                       [split (->* ((or/c string? input-port?))
+                                   (#:comment? any/c) (listof string?))]
                        [join (-> (listof string?) string?)]))
 
 
 (define unsafe-pattern #rx"[^a-zA-Z0-9_@%+=:,./-]")
-
-(define (unget s port)
-  (file-position port (- (file-position port) (string-utf-8-length s))))
 
 (define (join xs)
   (string-join (map quote-arg xs) " "))
@@ -52,7 +49,10 @@
 
   (define last-double-quote-info #f)
 
-  (define in (open-input-string s))
+  (define in
+    (cond
+      [(string? s) (open-input-string s)]
+      [else s]))
   (port-count-lines! in)
 
   (define double-quote-lex
@@ -153,6 +153,8 @@
   ;; not "a". On the other hand, "a #b" should be lexed as "a"
   (define lex/comment
     (lexer
+     #:suppress-warnings
+
      ;; Doc:
      ;; If the current character is a '#', it and all subsequent characters
      ;; up to, but excluding, the next <newline> shall be discarded as a
@@ -162,9 +164,7 @@
 
      [(eof) eof]
 
-     [any-char (begin
-                 (unget lexeme input-port)
-                 (lex/no-comment input-port))]))
+     ["" (lex/no-comment input-port)]))
 
   (define (cleanup toks)
     (cond
@@ -179,9 +179,6 @@
       [(== eof) '()]
       ['() (loop)]
       [_ (cons (cleanup out) (loop))])))
-
-(module+ main
-  (split (port->string (current-input-port))))
 
 (module+ test
   (require rackunit

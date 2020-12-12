@@ -30,7 +30,7 @@ the Open Group Base Specifications Issue 7, 2018 edition, rather than Python's i
 
 @section{Functions}
 
-@defproc[(split [s string?] [#:comment? comment? any/c #t]) (listof string?)]{
+@defproc[(split [s (or/c string? input-port?)] [#:comment? comment? any/c #t]) (listof string?)]{
   Split @racket[s] using shell-like syntax in POSIX mode.
 
   When @racket[comment?] is not @racket[#f], line comments via the character @tt{#} are supported.
